@@ -4,6 +4,7 @@ import androidx.annotation.VisibleForTesting
 import java.math.BigInteger
 import java.security.MessageDigest
 import java.security.SecureRandom
+import java.util.*
 
 class User private constructor(
     private val firstName: String,
@@ -17,7 +18,7 @@ class User private constructor(
     private val fullName: String
         get() = listOfNotNull(firstName, lastName)
             .joinToString(" ")
-            .capitalize()
+            .capitalize(Locale.ROOT)
 
     private val initials: String
         get() = listOfNotNull(firstName, lastName)
@@ -26,13 +27,13 @@ class User private constructor(
 
     private var phone: String? = null
         set(value) {
-            field = value?.replace("[^+\\d]".toRegex(), "")
+            field = value?.trimPhone()
         }
 
     private var _login: String? = null
     internal var login: String
         set(value) {
-            _login = value?.toLowerCase()
+            _login = value.toLowerCase(Locale.ROOT)
         }
         get() = _login!!
 
@@ -63,10 +64,10 @@ class User private constructor(
         rawPhone: String
     ) : this(firstName, lastName, rawPhone = rawPhone, meta = mapOf("auth" to "sms")) {
         println("Secondary phone constructor")
-        val code = generateAccessCode()
-        passwordHash = encrypt(code)
-        accessCode = code
-        sendAccessCodeToUser(rawPhone, code)
+        require(phone!!.matches("^[+]\\d{11}".toRegex())) {
+            "Enter a valid phone number starting with a + and containing 11 digits"
+        }
+        renewAccessCode()
     }
 
     init {
@@ -95,6 +96,13 @@ class User private constructor(
     fun changePassword(oldPass: String, newPass: String) {
         if (checkPassword(oldPass)) passwordHash = encrypt(newPass)
         else throw IllegalArgumentException("The entered password does not match the current password")
+    }
+
+    fun renewAccessCode() {
+        val code = generateAccessCode()
+        passwordHash = encrypt(code)
+        accessCode = code
+        sendAccessCodeToUser(phone, code)
     }
 
     private fun encrypt(password: String): String = salt.plus(password).md5()
@@ -131,11 +139,20 @@ class User private constructor(
         ): User {
             val (firstName, lastName) = fullName.fullNameToPair()
 
-            return when{
+            return when {
                 !phone.isNullOrBlank() -> User(firstName, lastName, phone)
-                !email.isNullOrBlank() && !password.isNullOrBlank() -> User(firstName, lastName, email, password)
+                !email.isNullOrBlank() && !password.isNullOrBlank() -> User(
+                    firstName,
+                    lastName,
+                    email,
+                    password
+                )
                 else -> throw IllegalArgumentException("Email or phone must be not null or blank")
             }
+        }
+
+        fun String.trimPhone(): String {
+            return this.replace("[^+\\d]".toRegex(), "")
         }
 
         private fun String.fullNameToPair(): Pair<String, String?> {

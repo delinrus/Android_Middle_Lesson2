@@ -1,5 +1,7 @@
 package ru.skillbranch.kotlinexample
 
+import ru.skillbranch.kotlinexample.User.Factory.trimPhone
+
 object UserHolder {
     private val map = mutableMapOf<String, User>()
 
@@ -9,14 +11,24 @@ object UserHolder {
         password: String
     ): User {
         return User.makeUser(fullName, email = email, password = password)
-            .also { user -> map[user.login] = user }
+            .also { user ->
+                if (map.contains(user.login))
+                    throw IllegalArgumentException("A user with this email already exists")
+                else
+                    map[user.login] = user
+            }
     }
 
     fun loginUser(login: String, password: String): String? {
-        return map[login.trim()]?.run {
-            if (checkPassword(password)) this.userInfo
-            else null
+        val logins = listOf(login.trim(), login.trimPhone())
+        logins.forEach {
+            map[it.trim()]?.run {
+                if (checkPassword(password)) {
+                    return this.userInfo
+                }
+            }
         }
+        return null
     }
 
     fun clearHolder() {
@@ -24,10 +36,16 @@ object UserHolder {
     }
 
     fun registerUserByPhone(fullName: String, phone: String): User {
-        TODO("Not yet implemented")
+        return User.makeUser(fullName, phone = phone)
+            .also { user ->
+                if (map.contains(user.login))
+                    throw IllegalArgumentException("A user with this phone already exists")
+                else
+                    map[user.login] = user
+            }
     }
 
     fun requestAccessCode(phone: String) {
-        TODO("Not yet implemented")
+        map[phone.trimPhone()]?.renewAccessCode()
     }
 }
