@@ -37,9 +37,17 @@ class User private constructor(
         }
         get() = _login!!
 
-    private val salt: String by lazy {
-        ByteArray(16).also { SecureRandom().nextBytes(it) }.toString()
-    }
+    private var _salt: String? = null
+    private var salt: String
+        set(value) {
+            _salt = value
+        }
+        get() {
+            if (_salt == null) {
+                _salt = ByteArray(16).also { SecureRandom().nextBytes(it) }.toString()
+            }
+            return _salt!!
+        }
 
     private lateinit var passwordHash: String
 
@@ -68,6 +76,27 @@ class User private constructor(
             "Enter a valid phone number starting with a + and containing 11 digits"
         }
         renewAccessCode()
+    }
+
+    //for scv
+    constructor(
+        firstName: String,
+        lastName: String?,
+        email: String?,
+        rawPhone: String?,
+        salt: String?,
+        passwordHash: String?
+    ) : this(
+        firstName,
+        lastName,
+        rawPhone = rawPhone,
+        email = email,
+        meta = mapOf("src" to "csv")
+    ) {
+        println("Secondary scv constructor")
+        salt?.let { this.salt = it }
+        passwordHash?.let { this.passwordHash = it }
+        phone?.let {renewAccessCode()}
     }
 
     init {
@@ -149,6 +178,32 @@ class User private constructor(
                 )
                 else -> throw IllegalArgumentException("Email or phone must be not null or blank")
             }
+        }
+
+        fun makeUserFromCsv(csvRecord: String): User {
+            val spitedRecord = csvRecord.split(";")
+            val fullName = spitedRecord[0]
+            val email = spitedRecord[1].ifBlank { null }
+            var salt : String? = null
+            var hash : String? = null
+            val saltAndHash = spitedRecord[2].ifBlank { null }
+            saltAndHash?.let {
+                salt = it.split(":")[0].ifBlank { null }
+                hash = it.split(":")[1].ifBlank { null }
+            }
+            val phone = spitedRecord[3].ifBlank { null }
+            if ((salt == null || (hash == null)) && (phone == null)) {
+                throw IllegalArgumentException("Must contain hash-salt pair of phone")
+            }
+
+            return User(
+                firstName = fullName.fullNameToPair().first,
+                lastName = fullName.fullNameToPair().second,
+                email,
+                phone,
+                salt,
+                hash
+            )
         }
 
         fun String.trimPhone(): String {

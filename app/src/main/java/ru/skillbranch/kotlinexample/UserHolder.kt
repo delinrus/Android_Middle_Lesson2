@@ -22,7 +22,7 @@ object UserHolder {
     fun loginUser(login: String, password: String): String? {
         val logins = listOf(login.trim(), login.trimPhone())
         logins.forEach {
-            map[it.trim()]?.run {
+            map[it]?.run {
                 if (checkPassword(password)) {
                     return this.userInfo
                 }
@@ -47,5 +47,11 @@ object UserHolder {
 
     fun requestAccessCode(phone: String) {
         map[phone.trimPhone()]?.renewAccessCode()
+    }
+
+    fun importUsers(list: List<String>): List<User> {
+        return list.map { record ->
+            User.makeUserFromCsv(record).also { map[it.login] = it }
+        }
     }
 }
