@@ -18,4 +18,16 @@ object UserHolder {
             else null
         }
     }
+
+    fun clearHolder() {
+        map.clear()
+    }
+
+    fun registerUserByPhone(fullName: String, phone: String): User {
+        TODO("Not yet implemented")
+    }
+
+    fun requestAccessCode(phone: String) {
+        TODO("Not yet implemented")
+    }
 }
