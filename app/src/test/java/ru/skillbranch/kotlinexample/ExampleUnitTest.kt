@@ -1,8 +1,7 @@
 package ru.skillbranch.kotlinexample
 
+import org.junit.Assert
 import org.junit.Test
-
-import org.junit.Assert.*
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -11,7 +10,24 @@ import org.junit.Assert.*
  */
 class ExampleUnitTest {
     @Test
-    fun addition_isCorrect() {
-        assertEquals(4, 2 + 2)
+    fun register_user() {
+        val holder = UserHolder
+        holder.registerUser("John Doe", "John_Doe@unknown.com","testPass")
+        val expectedInfo = """
+            firstName: John
+            lastName: Doe
+            login: john_doe@unknown.com
+            fullName: John Doe
+            initials: J D
+            email: John_Doe@unknown.com
+            phone: null
+            meta: {auth=password}
+        """.trimIndent()
+
+        val failResult = holder.loginUser("John_Doe@unknown.com", "testPass")
+        val successResult = holder.loginUser("john_doe@unknown.com", "testPass")
+
+        Assert.assertEquals(null, failResult)
+        Assert.assertEquals(expectedInfo, successResult)
     }
 }
