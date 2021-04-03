@@ -3,6 +3,7 @@ package ru.skillbranch.kotlinexample
 import org.junit.After
 import org.junit.Assert
 import org.junit.Test
+import ru.skillbranch.kotlinexample.extensions.dropLastUntil
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -234,5 +235,18 @@ class ExampleUnitTest {
 
         successResult = holder.loginUser("+71531338632", users[1].accessCode!!)
         Assert.assertEquals(expectedInfoUser2, successResult)
+    }
+
+    @Test
+    fun dropLastUntilTest() {
+        val intList = listOf(1, 2, 3).dropLastUntil{ it==2 }
+        Assert.assertEquals(listOf(1), intList)
+
+        val stringList = "House Nymeros Martell of Sunspear".split(" ")
+            .dropLastUntil{ it == "of" }
+        Assert.assertEquals(listOf("House", "Nymeros", "Martell"), stringList)
+
+        val emptyList = listOf<Int>().dropLastUntil{ it==2 }
+        Assert.assertEquals(listOf<Int>(), emptyList)
     }
 }
